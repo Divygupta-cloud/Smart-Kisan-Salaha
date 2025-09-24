@@ -7,7 +7,9 @@ import PrimaryButton from "../components/PrimaryButton";
 
 type SearchParams = {
   soil: string;
+  waterAvailability: string;  
   season: string;
+  landSize: string;         
   language: string;
   latitude: string;
   longitude: string;
@@ -23,7 +25,13 @@ export default function Advisory() {
     let isMounted = true;
 
     async function fetchAdvice() {
-      if (!params.soil || !params.season || !params.language || !params.latitude || !params.longitude) {
+      if (!params.soil || 
+          !params.waterAvailability || 
+          !params.season || 
+          !params.landSize ||
+          !params.language || 
+          !params.latitude || 
+          !params.longitude) {
         setError("Missing required parameters");
         setLoading(false);
         return;
@@ -32,10 +40,12 @@ export default function Advisory() {
       try {
         const res = await getCropAdvice(
           params.soil,
+          params.waterAvailability,
           params.season,
+          params.landSize,
           params.language,
-          parseFloat(params.latitude),    // Convert string to number
-          parseFloat(params.longitude)    // Convert string to number
+          parseFloat(params.latitude),
+          parseFloat(params.longitude)
         );
 
         if (isMounted) {
@@ -70,7 +80,8 @@ export default function Advisory() {
       isMounted = false;
       Speech.stop();
     };
-  }, [params.soil, params.season, params.language, params.latitude, params.longitude]);
+  }, [params.soil, params.waterAvailability, params.season, params.landSize, 
+      params.language, params.latitude, params.longitude]);
 
   return (
     <>

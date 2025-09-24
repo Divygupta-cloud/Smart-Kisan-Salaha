@@ -7,7 +7,9 @@ interface ApiResponse {
 
 export async function getCropAdvice(
   soil: string,
+  waterAvailability: string,
   season: string,
+  landSize: string,
   language: string,
   latitude: number,
   longitude: number
@@ -20,10 +22,14 @@ export async function getCropAdvice(
       },
       body: JSON.stringify({
         soil,
+        waterAvailability,
         season,
+        landSize,
         language,
-        latitude,
-        longitude
+        location: {
+          latitude,
+          longitude
+        }
       }),
     });
 

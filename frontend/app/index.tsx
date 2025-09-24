@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import Dropdown from "../components/Dropdown";
 import PrimaryButton from "../components/PrimaryButton";
+import { TextInput } from "react-native-gesture-handler";
 
 type LocationData = {
   latitude: number | null;
@@ -17,6 +18,8 @@ export default function Home() {
   const [language, setLanguage] = useState("");
   const [location, setLocation] = useState<LocationData>({ latitude: null, longitude: null });
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [waterAvailability, setWaterAvailability] = useState("");
+  const [landSize, setLandSize] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -53,7 +56,9 @@ export default function Home() {
       pathname: "/advisory",
       params: {
         soil,
+        waterAvailability,
         season,
+        landSize,
         language,
         latitude: location.latitude,
         longitude: location.longitude,
@@ -65,7 +70,20 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={styles.title}>🌱 Smart Kisan Salah</Text>
       <Dropdown label="Soil Type" options={["Loamy", "Sandy", "Clay"]} value={soil} onChange={setSoil} />
+      <Dropdown
+        label="Water Availability"
+        options={["High", "Medium", "Low"]}
+        value={waterAvailability}
+        onChange={setWaterAvailability}
+      />
       <Dropdown label="Season" options={["Kharif", "Rabi"]} value={season} onChange={setSeason} />
+      <TextInput
+        style={styles.input}
+        placeholder="Land Size (in acres)"
+        value={landSize}
+        onChangeText={setLandSize}
+        keyboardType="numeric"
+      />
       <Dropdown label="Language" options={["Hindi (hi)", "Telugu (te)", "Tamil (ta)"]} value={language} onChange={setLanguage} />
       <PrimaryButton title="Get Advisory" onPress={handleSubmit} />
       {locationError ? (
@@ -84,4 +102,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
   errorText: { color: "red", textAlign: "center", marginTop: 10 },
   successText: { color: "green", textAlign: "center", marginTop: 10 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 10,
+  },
 });
