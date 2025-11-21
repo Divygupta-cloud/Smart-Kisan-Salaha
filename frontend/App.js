@@ -1,5 +1,17 @@
 import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function App() {
-  return <Stack screenOptions={{ headerShown: true }} />;
+  return (
+    <SafeAreaProvider>
+      <Stack screenOptions={{ headerShown: true }}>
+        <Stack.Screen
+          name="index"
+          options={{
+            title: "Smart Kisan Salah",
+          }}
+        />
+      </Stack>
+    </SafeAreaProvider>
+  );
 }

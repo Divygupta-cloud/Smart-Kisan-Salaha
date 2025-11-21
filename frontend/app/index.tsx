@@ -1,81 +1,67 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState, useEffect } from "react";
+import { View, TextInput, Text, Alert, StyleSheet } from "react-native";
 import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 import Dropdown from "../components/Dropdown";
 import PrimaryButton from "../components/PrimaryButton";
-import { TextInput } from "react-native-gesture-handler";
-
-type LocationData = {
-  latitude: number | null;
-  longitude: number | null;
-};
+import { sendAdvisoryRequest } from "../services/api";
 
 export default function Home() {
   const router = useRouter();
   const [soil, setSoil] = useState("");
-  const [season, setSeason] = useState("");
-  const [language, setLanguage] = useState("");
-  const [location, setLocation] = useState<LocationData>({ latitude: null, longitude: null });
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [waterAvailability, setWaterAvailability] = useState("");
+  const [season, setSeason] = useState("");
   const [landSize, setLandSize] = useState("");
+  const [language, setLanguage] = useState("");
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | undefined>();
 
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-
       if (status !== "granted") {
-        setLocationError("Permission to access location was denied");
+        Alert.alert("Permission denied", "Location access is required for advisory.");
         return;
       }
 
-      try {
-        const position = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-
-        setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      } catch (error) {
-        setLocationError("Error getting location");
-        console.error(error);
-      }
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
     })();
   }, []);
 
-  const handleSubmit = async () => {
-    if (!location.latitude || !location.longitude) {
-      Alert.alert("Location Required", "Please enable location services to continue");
+  async function handleSubmit() {
+    if (!soil || !season || !language || !waterAvailability || !landSize) {
+      Alert.alert("Please fill all required fields");
       return;
     }
 
-    router.push({
-      pathname: "/advisory",
-      params: {
-        soil,
-        waterAvailability,
-        season,
-        landSize,
-        language,
-        latitude: location.latitude,
-        longitude: location.longitude,
-      },
-    });
-  };
+    const payload = {
+      soil,
+      waterAvailability,
+      season,
+      landSize,
+      language,
+      location,
+    };
+
+    console.log("Final payload:", JSON.stringify(payload, null, 2));
+
+    try {
+      const result = await sendAdvisoryRequest(payload);
+      router.push({
+        pathname: "/advisory",
+        params: { advice: result.message || JSON.stringify(result), language },
+      });
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert("Error", err.message || "Failed to fetch advisory");
+    }
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🌱 Smart Kisan Salah</Text>
       <Dropdown label="Soil Type" options={["Loamy", "Sandy", "Clay"]} value={soil} onChange={setSoil} />
-      <Dropdown
-        label="Water Availability"
-        options={["High", "Medium", "Low"]}
-        value={waterAvailability}
-        onChange={setWaterAvailability}
-      />
+      <Dropdown label="Water Availability" options={["High", "Medium", "Low"]} value={waterAvailability} onChange={setWaterAvailability} />
       <Dropdown label="Season" options={["Kharif", "Rabi"]} value={season} onChange={setSeason} />
       <TextInput
         style={styles.input}
@@ -86,13 +72,6 @@ export default function Home() {
       />
       <Dropdown label="Language" options={["Hindi (hi)", "Telugu (te)", "Tamil (ta)"]} value={language} onChange={setLanguage} />
       <PrimaryButton title="Get Advisory" onPress={handleSubmit} />
-      {locationError ? (
-        <Text style={styles.errorText}>{locationError}</Text>
-      ) : location.latitude ? (
-        <Text style={styles.successText}>📍 Location acquired</Text>
-      ) : (
-        <Text>Getting location...</Text>
-      )}
     </View>
   );
 }
@@ -100,8 +79,6 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
   title: { fontSize: 28, fontWeight: "bold", textAlign: "center", marginBottom: 20 },
-  errorText: { color: "red", textAlign: "center", marginTop: 10 },
-  successText: { color: "green", textAlign: "center", marginTop: 10 },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",

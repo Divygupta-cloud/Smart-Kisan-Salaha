@@ -1,60 +1,50 @@
 import { BASE_URL } from "../constants/api";
-import { StyleSheet } from 'react-native';
 
-interface ApiResponse {
-  message: string;
+export interface AdvisoryPayload {
+  soil: string;
+  waterAvailability: string;
+  season: string;
+  landSize: string;
+  language: string;
+  location?: { latitude: number; longitude: number };
 }
 
-export async function getCropAdvice(
-  soil: string,
-  waterAvailability: string,
-  season: string,
-  landSize: string,
-  language: string,
-  latitude: number,
-  longitude: number
-): Promise<ApiResponse> {
+export async function sendAdvisoryRequest(payload: AdvisoryPayload): Promise<any> {
+  if (!BASE_URL) throw new Error("BASE_URL is not defined — check frontend/constants/api.ts");
+  const url = `${BASE_URL.replace(/\/$/, "")}/api/advisory`;
+  console.log("sendAdvisoryRequest -> URL:", url, "payload:", payload);
+
   try {
-    const response = await fetch('http://localhost:5678/webhook/crop', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        soil,
-        waterAvailability,
-        season,
-        landSize,
-        language,
-        location: {
-          latitude,
-          longitude
-        }
-      }),
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    const text = await res.text();
+    console.log("sendAdvisoryRequest -> status:", res.status, "body:", text);
+
+    // Try parse JSON, but fall back to raw text if parse fails
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (parseErr) {
+      data = text;
     }
 
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+    if (!res.ok) {
+      throw new Error(`Backend error ${res.status}: ${JSON.stringify(data)}`);
+    }
+
+    return data;
+  } catch (err: unknown) {
+    console.error("sendAdvisoryRequest error:", err);
+    const message = err && typeof err === "object" && "message" in err ? (err as any).message : String(err);
+
+    if (message.includes("Failed to fetch")) {
+      throw new Error("Network error: cannot reach backend. Check BASE_URL, backend running, and network.");
+    }
+
+    throw err;
   }
 }
-
-const styles = StyleSheet.create({
-  errorText: {
-    color: 'red',
-    fontSize: 14,
-    textAlign: 'center',
-    marginVertical: 10,
-  },
-  successText: {
-    color: 'green',
-    fontSize: 14,
-    textAlign: 'center',
-    marginVertical: 10,
-  }
-});
